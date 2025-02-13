@@ -1,16 +1,16 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Raketa\BackendTestTask\Domain;
 
 final class Cart
 {
     public function __construct(
-        readonly private string $uuid,
-        readonly private Customer $customer,
-        readonly private string $paymentMethod,
-        private array $items,
+        private readonly string $uuid,
+        private readonly ?Customer $customer = null,
+        private readonly ?string $paymentMethod = null,
+        private array $items = [],
     ) {
     }
 
@@ -19,12 +19,12 @@ final class Cart
         return $this->uuid;
     }
 
-    public function getCustomer(): Customer
+    public function getCustomer(): ?Customer
     {
         return $this->customer;
     }
 
-    public function getPaymentMethod(): string
+    public function getPaymentMethod(): ?string
     {
         return $this->paymentMethod;
     }

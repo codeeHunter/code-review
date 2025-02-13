@@ -1,29 +1,28 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Raketa\BackendTestTask\Repository;
 
 use Doctrine\DBAL\Connection;
 use Raketa\BackendTestTask\Repository\Entity\Product;
+use RuntimeException;
 
 class ProductRepository
 {
-    private Connection $connection;
-
-    public function __construct(Connection $connection)
-    {
-        $this->connection = $connection;
+    public function __construct(
+        private Connection $connection
+    ) {
     }
 
     public function getByUuid(string $uuid): Product
     {
-        $row = $this->connection->fetchOne(
-            "SELECT * FROM products WHERE uuid = " . $uuid,
-        );
+        // Используем параметризованный запрос
+        $sql = "SELECT * FROM products WHERE uuid = :uuid LIMIT 1";
+        $row = $this->connection->fetchAssociative($sql, ['uuid' => $uuid]);
 
         if (empty($row)) {
-            throw new Exception('Product not found');
+            throw new RuntimeException('Product not found');
         }
 
         return $this->make($row);
@@ -31,25 +30,24 @@ class ProductRepository
 
     public function getByCategory(string $category): array
     {
-        return array_map(
-            static fn (array $row): Product => $this->make($row),
-            $this->connection->fetchAllAssociative(
-                "SELECT id FROM products WHERE is_active = 1 AND category = " . $category,
-            )
-        );
+        // Аналогично, параметризованный запрос
+        $sql = "SELECT * FROM products WHERE is_active = 1 AND category = :category";
+        $rows = $this->connection->fetchAllAssociative($sql, ['category' => $category]);
+
+        return array_map(fn (array $row) => $this->make($row), $rows);
     }
 
-    public function make(array $row): Product
+    private function make(array $row): Product
     {
         return new Product(
-            $row['id'],
-            $row['uuid'],
-            $row['is_active'],
-            $row['category'],
-            $row['name'],
-            $row['description'],
-            $row['thumbnail'],
-            $row['price'],
+            (int) $row['id'],
+            (string) $row['uuid'],
+            (bool) $row['is_active'],
+            (string) $row['category'],
+            (string) $row['name'],
+            (string) ($row['description'] ?? ''),
+            (string) ($row['thumbnail'] ?? ''),
+            (float) $row['price']
         );
     }
 }
